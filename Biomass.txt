@@ -1,0 +1,321 @@
+#Definindo diretório e importando base de dados -formato csv
+
+getwd ()
+#Importando Base 1 com dados em nível de árvore
+data <- read.csv("C:/Users/carol/Desktop/Ciencia de Dados e Big Data - PUCMg/TCC/Data/1.2.Biomassa/1.DadosOriginais/ID_TREE.csv",header=T,stringsAsFactors = FALSE, sep=",")
+str(data)
+summary(data)
+
+#Selecionando apenas as variáveis de interesse para Base1
+library(dplyr)
+data2 <- select(data,PLOTID,STATECD,UNITCD,COUNTYCD,TREE,STEM,SPCD,DIA,TOTAL_LENGTH,BASAL_AREA,CF_NET_VOLUME,DRY_TOT_BIOMASS)
+str(data2)
+summary(data2)
+pairs(data2)
+
+#Importando Base 2 com relação da nomenclatura das espécies
+dataespecie <- read.csv("C:/Users/carol/Desktop/Ciencia de Dados e Big Data - PUCMg/TCC/Data/1.2.Biomassa/1.DadosOriginais/REF_SPECIES.csv",header=T)
+str(dataespecie)
+
+#Selecionando apenas as variáveis de interesse para Base2
+dataespecie2 <- select(dataespecie,SPCD,COMMON_NAME)
+
+#Unindo Base 1 e Base 2 (apenas as colunas de interesse para ambas)
+data3 <- left_join(data2,dataespecie2,by='SPCD')
+summary(data3)
+str(data3)
+
+
+plot(data3$DIA,data3$BASAL_AREA,col=data3$SPCD, pch=16,xlab="Diâmetro",ylab="Area Basal")
+plot(data3$DIA,data3$TOTAL_LENGTH,col=data3$SPCD, pch=16,xlab="Diâmetro",ylab="Comprimento")
+plot(data3$DIA,data3$CF_NET_VOLUME,col=data3$SPCD, pch=16,xlab="Diâmetro",ylab="Volume")
+plot(data3$DIA,data3$DRY_TOT_BIOMASS,col=data3$SPCD, pch=16,xlab="Diâmetro",ylab="Biomassa")
+
+library (ggplot2)
+ggplot(data3,aes(x=DIA, y=DRY_TOT_BIOMASS,colour=COMMON_NAME)) + geom_point()
+
+#Removendo valores NAs 
+
+data4 <- na.omit(data3)
+summary(data4)
+
+#Eliminando os valores = 0 para variável "CT_NET_VOLUME"
+data5 <- subset(data4,data4$CF_NET_VOLUME>0)
+summary(data5)
+str(data5)
+
+#Transformando a variável "TOTAL_LENGTH" em numérica
+data5$TOTAL_LENGTH <-as.numeric(data5$TOTAL_LENGTH)
+summary(data5)
+str(data5)
+
+#BoxPlot para DIA/TOTAL_LENGTH/BASAL_AREA/CF_NET_VOLUME/DRY_TOT_BIOMASS/
+library(ggplot2)
+boxplot_DIA<- boxplot(data5$DIA,ylab="Diameter")
+
+boxplot_TOTAL_LENGTH<- boxplot(data5$TOTAL_LENGTH,ylab="Total Lenght")
+
+boxplot_BASAL_AREA<- boxplot(data5$BASAL_AREA,ylab="Basal Area")
+
+boxplot_CF_NET_VOLUME<- boxplot(data5$CF_NET_VOLUME,ylab="Volume")
+
+boxplot_DRY_TOT_BIOMASS<- boxplot(data5$DRY_TOT_BIOMASS,ylab="Biomass")
+
+
+#Histograma para DIA/TOTAL_LENGTH/BASAL_AREA/CF_NET_VOLUME/DRY_TOT_BIOMASS/
+Hist_DIA <- ggplot(data5, aes(x=DIA)) + geom_histogram()
+Hist_DIA+geom_histogram(binwidth = 5,color = "black", fill = "grey80")
+
+Hist_TOTAL_LENGTH <- ggplot(data5, aes(x=TOTAL_LENGTH)) + geom_histogram()
+Hist_TOTAL_LENGTH+geom_histogram(binwidth = 5,color = "black", fill = "grey80")
+
+Hist_BASAL_AREA <- ggplot(data5, aes(x=BASAL_AREA)) + geom_histogram()
+Hist_BASAL_AREA+geom_histogram(binwidth = 0.5,color = "black", fill = "grey80")
+
+Hist_CF_NET_VOLUME <- ggplot(data5, aes(x=CF_NET_VOLUME)) + geom_histogram()
+Hist_CF_NET_VOLUME+geom_histogram(binwidth = 10,color = "black", fill = "grey80")
+
+Hist_DRY_TOT_BIOMASS <- ggplot(data5, aes(x=DRY_TOT_BIOMASS)) + geom_histogram()
+Hist_DRY_TOT_BIOMASS+geom_histogram(binwidth = 500,color = "black", fill = "grey80")
+
+#Removendo Outliers variável DIA
+Q1_DIA <- quantile(data5$DIA,.25)
+Q3_DIA <- quantile(data5$DIA,.75)
+IQR_DIA <- IQR(data5$DIA)
+data6_DIA<-subset(data5, data5$DIA > (Q1_DIA - 1.5*IQR_DIA) & data5$DIA< (Q3_DIA + 1.5*IQR_DIA))
+boxplot_DIA<- boxplot(data6_DIA$DIA)
+
+
+#Removendo Outliers variável TOTAL_LENGTH
+Q1_LENGTH <- quantile(data6_DIA$TOTAL_LENGTH,.25)
+Q3_LENGTH <- quantile(data6_DIA$TOTAL_LENGTH,.75)
+IQR_LENGTH <- IQR(data6_DIA$TOTAL_LENGTH)
+data6_LENGTH<-subset(data6_DIA, data6_DIA$TOTAL_LENGTH > (Q1_LENGTH - 1.5*IQR_LENGTH) & data6_DIA$TOTAL_LENGTH< (Q3_LENGTH + 1.5*IQR_LENGTH))
+boxplot_LENGTH<- boxplot(data6_LENGTH$TOTAL_LENGTH)
+
+
+#Removendo Outliers variável BASAL_AREA
+Q1_BA <- quantile(data6_LENGTH$BASAL_AREA,.25)
+Q3_BA <- quantile(data6_LENGTH$BASAL_AREA,.75)
+IQR_BA <- IQR(data6_LENGTH$BASAL_AREA)
+data6_BA<-subset(data6_LENGTH, data6_LENGTH$BASAL_AREA > (Q1_BA - 1.5*IQR_BA) & data6_LENGTH$BASAL_AREA< (Q3_BA + 1.5*IQR_BA))
+boxplot_BA<- boxplot(data6_BA$BASAL_AREA)
+
+
+#Removendo Outliers variável CF_NET_VOLUME
+Q1_VOL <- quantile(data6_BA$CF_NET_VOLUME,.25)
+Q3_VOL <- quantile(data6_BA$CF_NET_VOLUME,.75)
+IQR_VOL <- IQR(data6_BA$CF_NET_VOLUME)
+data6_VOL<-subset(data6_BA, data6_BA$CF_NET_VOLUME > (Q1_VOL - 1.5*IQR_VOL) & data6_BA$CF_NET_VOLUME< (Q3_VOL + 1.5*IQR_VOL))
+boxplot_VOL<- boxplot(data6_VOL$CF_NET_VOLUME)
+
+
+#Removendo Outliers variável DRY_TOT_BIOMASS
+Q1_BIO <- quantile(data6_VOL$DRY_TOT_BIOMASS,.25)
+Q3_BIO <- quantile(data6_VOL$DRY_TOT_BIOMASS,.75)
+IQR_BIO <- IQR(data6_VOL$DRY_TOT_BIOMASS)
+data6_BIO<-subset(data6_VOL, data6_VOL$DRY_TOT_BIOMASS > (Q1_BIO - 1.5*IQR_BIO) & data6_VOL$DRY_TOT_BIOMASS< (Q3_BIO + 1.5*IQR_BIO))
+boxplot_BIO<- boxplot(data6_BIO$DRY_TOT_BIOMASS)
+
+data7 <- data6_BIO
+summary(data7)
+str(data7)
+
+#Reduzindo a quantidade de níveis para variácel Nome Comum  - Agrupando os 5 mais frequentes
+
+factor_common_name <- as.factor(data7$COMMON_NAME)
+factor_common_name
+library(forcats)
+factor_common_name2 <- fct_lump(factor_common_name,n = 5)
+
+
+#Inserindo o novo campo com o nome das especies agrupados no dataframe
+data8 <-data7
+data8$SPECIE_NAME <- factor_common_name2
+str(data8)
+
+library(ggplot2)
+ggplot(data8,aes(x=DIA, y=DRY_TOT_BIOMASS, colour=SPECIE_NAME)) + geom_point()
+ggplot(data8,aes(x=TOTAL_LENGTH, y=DRY_TOT_BIOMASS, colour=SPECIE_NAME)) + geom_point()
+
+
+#Excluindo as colunas que de SPCD e COMMON_NAME que foram substituídas por SPECIE_NAME
+data9 <- data8[,-7]
+str(data9)
+
+data10 <- data9[,-12]
+str(data10)
+
+#Transformando os fatores em variáveis numéricas
+levels(data10$SPECIE_NAME)
+str(data10$SPECIE_NAME)
+
+data11<-data10
+data11$AJ <- ifelse(data11$SPECIE_NAME == "Ashe juniper",1,0)
+data11$CE <- ifelse(data11$SPECIE_NAME == "cedar elm",1,0)
+data11$CT <- ifelse(data11$SPECIE_NAME == "Chinese tallowtree",1,0)
+data11$LO <- ifelse(data11$SPECIE_NAME == "live oak",1,0)
+data11$S <- ifelse(data11$SPECIE_NAME == "sugarberry",1,0)
+data11$O <- ifelse(data11$SPECIE_NAME == "Other",1,0)
+
+data12 <-data11[,-12]
+str(data12)
+summary(data12)
+
+#Dividindo os dados para formar as bases de treinamento e teste 70/30%
+set.seed(15)
+
+index <-sample(1:length(data12$DRY_TOT_BIOMASS),length(data12$DRY_TOT_BIOMASS)*0.7)
+train.data<- data12[index,]
+teste.data<- data12[-index,]
+summary(train.data)
+
+######Ajustando modelo de regressão linear#####
+
+LinearReg <- glm(DRY_TOT_BIOMASS ~ DIA + TOTAL_LENGTH + BASAL_AREA + CF_NET_VOLUME + AJ + CE + 
+                   CT + LO + S + O, data=train.data)
+summary(LinearReg)
+
+# 1 not defined because of singularities / Predictor variables have an exact linear relationship between them - perfect multicollinearity / Drop one of those variables from the regression model.
+
+LinearReg2 <- glm(DRY_TOT_BIOMASS ~ DIA + TOTAL_LENGTH + BASAL_AREA + CF_NET_VOLUME + AJ + CE + 
+                   CT + LO + S, data=train.data)
+summary(LinearReg2)
+
+#Area basal foi não significativa
+LinearReg3 <- glm(DRY_TOT_BIOMASS ~ DIA + TOTAL_LENGTH + CF_NET_VOLUME + AJ + CE + 
+                    CT + LO + S, data=train.data)
+summary(LinearReg3)
+Predict_LinReg <-predict(LinearReg3,teste.data)
+MSE.Predict_LinReg <- sum((Predict_LinReg - teste.data$DRY_TOT_BIOMASS)^2)/nrow(teste.data)
+MSE.Predict_LinReg
+
+
+######Redes neurais artificiais#####
+
+#Normalizando os dados com método min-max para dimensionar os dados no intervalo [0,1]
+
+maxs <- apply(data12, 2, max)
+maxs
+
+mins <- apply(data12, 2, min)
+mins
+
+scaled <- as.data.frame(scale(data12,center=mins,scale=maxs-mins))
+
+head(scaled)
+
+train.data_RNA<- scaled[index,]
+teste.data_RNA<- scaled[-index,]
+
+library(neuralnet)
+f<-DRY_TOT_BIOMASS ~ DIA + TOTAL_LENGTH + BASAL_AREA + CF_NET_VOLUME + AJ + CE + CT + LO + S + O
+RNA1<-neuralnet(f,
+                data=train.data_RNA,
+                hidden=c(5,3),
+                algorithm="rprop+")        
+plot (RNA1)
+library(NeuralNetTools)
+plotnet(RNA1)
+
+Predict_RNA1 <- predict(RNA1,teste.data_RNA[,-11])
+
+Predict_RNA1 <- Predict_RNA1*(max(data12$DRY_TOT_BIOMASS)-min(data12$DRY_TOT_BIOMASS))+min(data12$DRY_TOT_BIOMASS)
+Teste_RNA1_BIO <- (teste.data_RNA$DRY_TOT_BIOMASS)*(max(data12$DRY_TOT_BIOMASS)-min(data12$DRY_TOT_BIOMASS))+min(data12$DRY_TOT_BIOMASS)
+
+MSE.Predict_RNA <- sum((Teste_RNA1_BIO - Predict_RNA1)^2)/nrow(teste.data_RNA)
+MSE.Predict_RNA
+MSE.Predict_LinReg
+
+#Testando algoritmo rprop-
+RNA2<-neuralnet(f,
+                data=train.data_RNA,
+                hidden=c(5,3),
+                algorithm="rprop-")        
+plot (RNA2)
+library(NeuralNetTools)
+plotnet(RNA2)
+
+Predict_RNA2 <- predict(RNA2,teste.data_RNA[,-11])
+
+Predict_RNA2 <- Predict_RNA2*(max(data12$DRY_TOT_BIOMASS)-min(data12$DRY_TOT_BIOMASS))+min(data12$DRY_TOT_BIOMASS)
+Teste_RNA2_BIO <- (teste.data_RNA$DRY_TOT_BIOMASS)*(max(data12$DRY_TOT_BIOMASS)-min(data12$DRY_TOT_BIOMASS))+min(data12$DRY_TOT_BIOMASS)
+
+MSE.Predict_RNA2 <- sum((Teste_RNA2_BIO - Predict_RNA2)^2)/nrow(teste.data_RNA)
+MSE.Predict_RNA2
+MSE.Predict_RNA
+
+#Testando algoritmo slr -->não convergiu
+
+RNA3<-neuralnet(f,
+                data=train.data_RNA,
+                hidden=c(5,3),
+                algorithm="slr")        
+
+# Testando número de neurônios nas camadas ocultas c(5,5), com algoritmo rprop+ --> não convergiu
+
+RNA4<-neuralnet(f,
+                data=train.data_RNA,
+                hidden=c(5,5),
+                algorithm="rprop+")        
+
+# Testando número de neurônios nas camadas ocultas c(5,4), com algoritmo rprop+ --> não convergiu
+
+RNA5<-neuralnet(f,
+                data=train.data_RNA,
+                hidden=c(5,4),
+                algorithm="rprop+")        
+
+
+# Testando número de camadas ocultas, com algoritmo rprop+ --> não convergiu
+
+RNA6<-neuralnet(f,
+                data=train.data_RNA,
+                hidden=5,
+                algorithm="rprop+") 
+
+
+plot(Teste_RNA1_BIO,Predict_RNA1,xlab="Biomass Test Dataset", ylab="Estimated Biomass RNA1")
+abline(0,1,lwd=2, col="red")
+plot(Teste_RNA1_BIO,Predict_LinReg,xlab="Biomass Test Dataset", ylab="Estimated Biomass Linear Regression")
+abline(0,1,lwd=2, col="red")
+
+
+######Random Forest#####
+
+train.data_RF<- scaled[index,]
+teste.data_RF<- scaled[-index,]
+
+library(randomForest)
+
+f<-DRY_TOT_BIOMASS ~ DIA + TOTAL_LENGTH + BASAL_AREA + CF_NET_VOLUME + AJ + CE + CT + LO + S + O
+RF1 <- randomForest(f,
+                    data=train.data_RF,
+                    importance = TRUE)
+RF1
+plot(RF1)
+importance(RF1)
+varImpPlot(RF1)
+getTree(RF1,1)
+which.min(RF1$mse)
+
+Predict_RF1 <- predict(RF1,teste.data_RF[,-11])
+
+Predict_RF1 <- Predict_RF1*(max(data12$DRY_TOT_BIOMASS)-min(data12$DRY_TOT_BIOMASS))+min(data12$DRY_TOT_BIOMASS)
+Teste_RF1_BIO <- (teste.data_RF$DRY_TOT_BIOMASS)*(max(data12$DRY_TOT_BIOMASS)-min(data12$DRY_TOT_BIOMASS))+min(data12$DRY_TOT_BIOMASS)
+
+
+MSE.Predict_RF1 <- sum((Teste_RF1_BIO - Predict_RF1)^2)/nrow(teste.data_RF)
+MSE.Predict_RF1
+MSE.Predict_RNA
+MSE.Predict_LinReg
+
+
+plot(Teste_RF1_BIO,Predict_RF1,xlab="Biomass Test Dataset", ylab="Estimated Biomass RF1", xlim=c(0,500), ylim=c(0,500))
+abline(0,1,lwd=2, col="red")
+
+plot(Teste_RNA1_BIO,Predict_RNA1,xlab="Biomass Test Dataset", ylab="Estimated Biomass RNA1",xlim=c(0,500), ylim=c(0,500))
+abline(0,1,lwd=2, col="red")
+
+plot(Teste_RNA1_BIO,Predict_LinReg,xlab="Biomass Test Dataset", ylab="Estimated Biomass Linear Regression",xlim=c(0,500), ylim=c(0,500))
+abline(0,1,lwd=2, col="red")
